@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { getCase, riskLevel } from "@/lib/cases";
+import { getCase, riskLevel, type Case } from "@/lib/cases";
 import { RiskMeter } from "@/components/RiskMeter";
 import { XAIPanel } from "@/components/XAIPanel";
 import { EvidenceList } from "@/components/EvidenceList";
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/case/$caseId")({
       { name: "description", content: "Detailed digital case file with explainable AI breakdown and audit tools." },
     ],
   }),
-  loader: ({ params }) => {
+  loader: ({ params }): Case => {
     const c = getCase(params.caseId);
     if (!c) throw notFound();
     return c;
