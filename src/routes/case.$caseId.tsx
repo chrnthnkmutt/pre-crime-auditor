@@ -39,7 +39,7 @@ export const Route = createFileRoute("/case/$caseId")({
 type Tab = "ai" | "evidence" | "xai";
 
 function CaseFileView() {
-  const initialCase = Route.useLoaderData();
+  const initialCase = Route.useLoaderData() as Case;
   const [tab, setTab] = useState<Tab>("ai");
   const [riskScore, setRiskScore] = useState(initialCase.riskScore);
   const [auditOpen, setAuditOpen] = useState(false);
@@ -50,7 +50,7 @@ function CaseFileView() {
   const [auditMeta, setAuditMeta] = useState<{ time: number; bias: boolean; accuracy: number } | null>(null);
   const [startTime] = useState(Date.now());
 
-  const c = initialCase;
+  const c: Case = initialCase;
   const lvl = riskLevel(riskScore);
   const overrideUnlocked = riskScore < 40;
 
