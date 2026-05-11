@@ -20,8 +20,10 @@ export function AppHeader() {
         </Link>
 
         <nav className="flex items-center gap-1">
-          <NavItem to="/">Dashboard</NavItem>
+          <NavItem to="/">Home</NavItem>
+          <NavItem to="/dashboard">Dashboard</NavItem>
           <NavItem to="/audit-log">Audit Log</NavItem>
+          <NavItem to="/login">Login</NavItem>
         </nav>
 
         <div className="flex items-center gap-4">
