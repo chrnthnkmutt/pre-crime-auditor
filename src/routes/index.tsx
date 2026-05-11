@@ -210,8 +210,3 @@ function Step({ n, title, icon, desc }: { n: string; title: string; icon: React.
     </div>
   );
 }
-  const [selectedId, setSelectedId] = useState(cases[0].id);
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "critical" | "bias">("all");
-
-  const filtered = useMemo(() => {
