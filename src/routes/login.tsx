@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { Lock, User, Shield, AlertCircle, Loader2, Fingerprint } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { login as loginUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -31,6 +32,7 @@ function LoginPage() {
     // Mock authentication delay
     setTimeout(() => {
       setLoading(false);
+      loginUser(username.trim());
       navigate({ to: "/dashboard" });
     }, 900);
   };

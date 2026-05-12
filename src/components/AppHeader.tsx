@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, Shield } from "lucide-react";
+import { Activity, Shield, LogOut } from "lucide-react";
+import { useAuth, logout } from "@/lib/auth";
 
 export function AppHeader() {
+  const user = useAuth();
   return (
     <header className="sticky top-0 z-40 glass-strong border-b border-border">
       <div className="flex h-14 items-center justify-between px-6">
@@ -21,9 +23,9 @@ export function AppHeader() {
 
         <nav className="flex items-center gap-1">
           <NavItem to="/">Home</NavItem>
-          <NavItem to="/dashboard">Dashboard</NavItem>
-          <NavItem to="/audit-log">Audit Log</NavItem>
-          <NavItem to="/login">Login</NavItem>
+          {user && <NavItem to="/dashboard">Dashboard</NavItem>}
+          {user && <NavItem to="/audit-log">Audit Log</NavItem>}
+          {!user && <NavItem to="/login">Login</NavItem>}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -37,8 +39,18 @@ export function AppHeader() {
           </div>
           <div className="hidden md:flex items-center gap-2 font-mono text-xs text-muted-foreground">
             <Activity className="h-3.5 w-3.5 text-primary" />
-            <span>Auditor: <span className="text-foreground">K. Anders</span></span>
+            <span>Auditor: <span className="text-foreground">{user?.username ?? "—"}</span></span>
           </div>
+          {user && (
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-mono text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-colors"
+              aria-label="Log out"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">Logout</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
