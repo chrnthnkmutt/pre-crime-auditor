@@ -64,7 +64,8 @@ Then open:
 ## Notes
 
 - The login flow is demo-only and accepts any non-empty credentials.
-- Case data is seeded from `data/cases.json` and loaded through SQLite when the generated DB is available.
+- Case data is seeded from `data/cases.json` and loaded through SQLite in the browser when the generated DB is available.
+- Server-side rendering falls back to the JSON seed, so the app can boot even if the browser-only SQLite assets are not present yet.
 - If you change dependencies, restart the dev server so the app picks up the new install tree.
 
 ## Database (local development)
@@ -77,7 +78,7 @@ npm install
 npm run dev:all
 ```
 
-- `npm run generate-db` also writes `public/data/cases.db` and `public/sql-wasm.wasm` so the dev server can serve them immediately.
-- At runtime the app uses `sql.js` (SQLite compiled to WASM) and first tries to load `/data/cases.db`; if that fails, it falls back to the JSON seed.
+- `npm run generate-db` also writes `public/data/cases.db` and `public/sql-wasm.wasm` so the dev server can serve them immediately; these generated browser assets are ignored by git.
+- At runtime the app uses `sql.js` (SQLite compiled to WASM) in the browser and first tries to load `/data/cases.db`; if that fails, it falls back to the JSON seed.
 
 These steps keep the seed editable as JSON (`data/cases.json`) while producing a fast, queryable SQLite file for testing and offline workflows.

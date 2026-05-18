@@ -54,7 +54,7 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
   );
 }
 
-export const createRouter = () => {
+export function getRouter() {
   const router = createTanStackRouter({
     routeTree,
     context: {},
@@ -64,6 +64,4 @@ export const createRouter = () => {
   });
 
   return router;
-};
-
-export const getRouter = createRouter;
+}

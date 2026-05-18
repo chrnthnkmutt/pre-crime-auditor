@@ -50,6 +50,7 @@ let _dbReady = false;
 
 async function ensureDb() {
   if (_dbReady) return;
+  if (typeof window === 'undefined') return;
   try {
     const initSqlJs = (await import('sql.js')).default;
     const SQL = await initSqlJs({ locateFile: (file: string) => `/sql-wasm.wasm` });

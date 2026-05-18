@@ -1,6 +1,7 @@
-import { Outlet, createRootRoute, HeadContent, Link } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Link, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { AppHeader } from "@/components/AppHeader";
+import type { ReactNode } from "react";
 
 function NotFoundComponent() {
   return (
@@ -46,12 +47,11 @@ export const Route = createRootRoute({
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
 });
 
-function RootShell({ children }: { children: React.ReactNode }) {
+function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
@@ -59,6 +59,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <Scripts />
       </body>
     </html>
   );
@@ -66,11 +67,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <AppHeader />
-      <main className="flex-1">
-        <Outlet />
-      </main>
-    </div>
+    <RootDocument>
+      <div className="min-h-screen flex flex-col">
+        <AppHeader />
+        <main className="flex-1">
+          <Outlet />
+        </main>
+      </div>
+    </RootDocument>
   );
 }
