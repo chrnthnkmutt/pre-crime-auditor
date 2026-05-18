@@ -8,6 +8,9 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "generate-db": "node ./scripts/generate_db.mjs",
+    "generate-db:watch": "chokidar \"data/cases.json\" -c \"npm run generate-db\"",
+    "dev:all": "concurrently \"npm run generate-db:watch\" \"npm run dev\"",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -43,7 +46,7 @@
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.83.0",
     "@tanstack/react-router": "1.131.50",
-    "@tanstack/react-start": "1.131.50",
+    "@tanstack/react-start": "^1.168.6",
     "@tanstack/router-plugin": "1.131.50",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -66,13 +69,24 @@
     "vite-tsconfig-paths": "^6.0.2",
     "zod": "^3.24.2"
   },
+  "dependenciesMeta": {
+    "sql.js": {
+      "optional": true
+    }
+  },
+  "optionalDependencies": {
+    "sql.js": "^1.8.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "^1.4.0",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/sql.js": "^1.4.11",
     "@vitejs/plugin-react": "^5.0.4",
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",

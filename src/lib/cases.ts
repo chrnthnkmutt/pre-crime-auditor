@@ -34,200 +34,135 @@ export interface Case {
   biasWarning?: string;
 }
 
-export const cases: Case[] = [
-  {
-    id: "PCA-2049-0401",
-    citizenName: "Anan Kittisak",
-    citizenId: "C-50421-A",
-    predictedCrime: "Corporate Espionage",
-    riskScore: 94,
-    status: "pending",
-    flaggedAt: "03:12:44 UTC",
-    district: "Sector 4 — Helix Tower",
-    aiSummary:
-      "Subject transferred 500GB of internal data at 03:12 local time and accessed restricted file servers. Predictive model assigns 94% probability of premeditated data exfiltration consistent with insider espionage profile.",
-    triggers: [
-      "500GB outbound transfer (03:12 local)",
-      "Access to restricted file shares",
-      "Off-hour endpoint activity",
-    ],
-    suspiciousPhrases: [
-      "backing up everything tonight",
-    ],
-    features: [
-      { feature: "Bulk data transfer volume", weight: 0.93, reasoning: "500GB exceeds 99.7th percentile of role baseline." },
-      { feature: "Off-hour activity", weight: 0.78, reasoning: "Activity at 03:12 outside normal work pattern." },
-      { feature: "Restricted share access", weight: 0.71, reasoning: "Endpoint touched shares tagged 'restricted'.", biased: true },
-      { feature: "Lexical intent score", weight: 0.44, reasoning: "Phrase 'backing up everything tonight' matched exfil corpus.", biased: true },
-    ],
-    evidence: [
-      { id: "E-01", type: "email", title: "URGENT: Hard drive failure warning", source: "it-helpdesk@helix.corp", timestamp: "21:48", preview: "SMART diagnostics report imminent disk failure on your workstation. Please initiate full backup tonight before EOD.", flagged: false },
-      { id: "E-02", type: "log", title: "Automated Backup Process", source: "BackupAgent v4.2", timestamp: "03:12", preview: "Scheduled backup initiated automatically — target: corp-backup-vault-03. Source: user workstation.", flagged: false },
-      { id: "E-03", type: "chat", title: "Slack :: #team-eng", source: "Slack", timestamp: "22:04", preview: "My laptop might crash — IT told me to back everything up tonight just in case.", flagged: true },
-      { id: "E-04", type: "log", title: "Endpoint Transfer Log", source: "DLP Sensor", timestamp: "03:12", preview: "500.2GB → corp-backup-vault-03 (internal, sanctioned destination)", flagged: true },
-    ],
-    biasWarning: "Model flagged volume + off-hour pattern but ignored sanctioned destination and IT helpdesk ticket. Human context missing.",
-  },
-  {
-    id: "PCA-2049-0402",
-    citizenName: "Pim Laksana",
-    citizenId: "C-50422-B",
-    predictedCrime: "Financial Fraud / Escape Risk",
-    riskScore: 88,
-    status: "pending",
-    flaggedAt: "16:22:09 UTC",
-    district: "Sector 2 — Lumen",
-    aiSummary:
-      "Subject withdrew large cash sum and booked one-way international flight within 36 hours. Behavioral fingerprint matches escape-risk profile at 88% confidence.",
-    triggers: [
-      "Cash withdrawal: ฿180,000",
-      "One-way flight booked (BKK → CNX)",
-      "Unusual purchase velocity",
-    ],
-    suspiciousPhrases: [],
-    features: [
-      { feature: "Cash withdrawal magnitude", weight: 0.84, reasoning: "Exceeds 90-day average by 12×." },
-      { feature: "One-way travel booking", weight: 0.79, reasoning: "No return leg detected.", biased: true },
-      { feature: "Purchase velocity anomaly", weight: 0.52, reasoning: "Multiple high-value transactions in 24h." },
-      { feature: "Demographic risk cluster", weight: 0.31, reasoning: "Age/income bracket overweighted in legacy model.", biased: true },
-    ],
-    evidence: [
-      { id: "E-01", type: "receipt", title: "Goldsmith Receipt — Engagement Ring", source: "Aurora Jewelers", timestamp: "14:02", preview: "1× Solitaire engagement ring — ฿165,000. Customer note: 'engraving: P&S forever'.", flagged: true },
-      { id: "E-02", type: "chat", title: "WhatsApp :: Mom", source: "WhatsApp", timestamp: "15:11", preview: "I'm going to propose tomorrow at the lake 🥹 don't tell anyone!", flagged: true },
-      { id: "E-03", type: "log", title: "Calendar Entry", source: "Google Calendar", timestamp: "All-day", preview: "Surprise trip — Chiang Mai 💍 (private)", flagged: false },
-      { id: "E-04", type: "transaction", title: "Flight Booking", source: "ThaiAir", timestamp: "15:48", preview: "BKK → CNX one-way (return booked separately under partner's account)", flagged: true },
-    ],
-    biasWarning: "Correlation ≠ causation. Model treated cash + one-way ticket as escape signature without checking purchase context.",
-  },
-  {
-    id: "PCA-2049-0403",
-    citizenName: "Niran Thanawat",
-    citizenId: "C-50423-C",
-    predictedCrime: "Stalking",
-    riskScore: 91,
-    status: "pending",
-    flaggedAt: "19:47:31 UTC",
-    district: "Sector 9 — Apex",
-    aiSummary:
-      "Subject's GPS shows repeated visits to the same residential coordinates and tracking-like proximity to multiple individuals across a 7-day window. Stalking probability: 91%.",
-    triggers: [
-      "Repeat visits to 14 residential addresses",
-      "Proximity dwell-time anomaly",
-      "Movement matches target trajectories",
-    ],
-    suspiciousPhrases: [],
-    features: [
-      { feature: "Address revisit frequency", weight: 0.88, reasoning: "Same coordinates visited 6+ times in 7 days." },
-      { feature: "Proximity to non-contacts", weight: 0.74, reasoning: "Within 5m of unrelated individuals.", biased: true },
-      { feature: "Late-evening activity", weight: 0.55, reasoning: "Active until 23:00.", biased: true },
-      { feature: "Vehicle pattern", weight: 0.48, reasoning: "Two-wheeler with frequent stops." },
-    ],
-    evidence: [
-      { id: "E-01", type: "log", title: "Delivery App Driver Log", source: "FoodFlash Partner App", timestamp: "11:00–22:48", preview: "47 completed deliveries today. Active driver since 2047. Rating: 4.92★", flagged: false },
-      { id: "E-02", type: "log", title: "Work Schedule", source: "FoodFlash Roster", timestamp: "Weekly", preview: "Shift: Mon–Sat 11:00–23:00. Zone: Sector 9 residential.", flagged: false },
-      { id: "E-03", type: "log", title: "GPS Trace — Customer Drops", source: "Driver telematics", timestamp: "19:30", preview: "Stop #38: handoff confirmed via app QR. Stop #39: 4min dwell, customer signature captured.", flagged: false },
-      { id: "E-04", type: "receipt", title: "Tip Receipt", source: "FoodFlash", timestamp: "19:42", preview: "Customer tip ฿40 — 'thanks for the fast delivery!'", flagged: false },
-    ],
-    biasWarning: "Occupational pattern (gig delivery) misread as stalking. Job context absent from feature set.",
-  },
-  {
-    id: "PCA-2049-0404",
-    citizenName: "Kanya Suwannarat",
-    citizenId: "C-50424-D",
-    predictedCrime: "Harassment / Spam Attack",
-    riskScore: 86,
-    status: "pending",
-    flaggedAt: "02:18:55 UTC",
-    district: "Sector 6 — Riverside",
-    aiSummary:
-      "Subject sent 214 messages in 58 minutes across multiple channels. Burst pattern matches coordinated harassment / spam profile at 86% confidence.",
-    triggers: [
-      "214 messages in 58 minutes",
-      "Repeated identical phrases",
-      "Multi-channel broadcast",
-    ],
-    suspiciousPhrases: [
-      "EVACUATE NOW",
-      "do not stay",
-    ],
-    features: [
-      { feature: "Message burst velocity", weight: 0.89, reasoning: "Exceeds harassment threshold (>3msg/min sustained)." },
-      { feature: "Repeated phrase ratio", weight: 0.71, reasoning: "62% of messages share template.", biased: true },
-      { feature: "All-caps frequency", weight: 0.58, reasoning: "Capitalization anomaly vs baseline.", biased: true },
-      { feature: "Multi-recipient fan-out", weight: 0.52, reasoning: "Sent to 38 distinct recipients." },
-    ],
-    evidence: [
-      { id: "E-01", type: "chat", title: "LINE Group :: Riverside Residents", source: "LINE", timestamp: "01:22", preview: "🚨 EVACUATE NOW — water rising fast on Soi 12. Move to community center on the hill. Bring ID + medication.", flagged: true },
-      { id: "E-02", type: "chat", title: "LINE Group :: Block-7 Coord", source: "LINE", timestamp: "01:31", preview: "Headcount please — reply ✅ when your family is at the shelter. Do not stay in ground floor units.", flagged: true },
-      { id: "E-03", type: "log", title: "National Weather Alert", source: "NWS Bulletin", timestamp: "01:14", preview: "FLASH FLOOD WARNING — Riverside district. Immediate evacuation advised. Issued 01:14 local.", flagged: false },
-      { id: "E-04", type: "chat", title: "Reply :: neighbor", source: "LINE", timestamp: "01:44", preview: "Thank you Kanya — we made it to the shelter. You saved us 🙏", flagged: false },
-    ],
-    biasWarning: "Burst-velocity feature dominates. Model never checked emergency bulletin context — urgency mistaken for hostility.",
-  },
-  {
-    id: "PCA-2049-0405",
-    citizenName: "Chai Wongthep",
-    citizenId: "C-50425-E",
-    predictedCrime: "Illegal Substance Production",
-    riskScore: 93,
-    status: "pending",
-    flaggedAt: "11:04:18 UTC",
-    district: "Sector 11 — Kallisto Campus",
-    aiSummary:
-      "Subject made 9 purchases of regulated chemical precursors within 30 days. Procurement signature matches clandestine synthesis profile at 93% confidence.",
-    triggers: [
-      "Recurring precursor purchases",
-      "Glassware + reagent co-purchase",
-      "Cash-mixed payment pattern",
-    ],
-    suspiciousPhrases: [],
-    features: [
-      { feature: "Precursor purchase frequency", weight: 0.91, reasoning: "9 buys / 30 days vs population median 0." },
-      { feature: "Reagent + apparatus co-purchase", weight: 0.77, reasoning: "Glassware co-occurs with reagents.", biased: true },
-      { feature: "Vendor diversity", weight: 0.49, reasoning: "Purchases split across 4 suppliers." },
-      { feature: "Geographic cluster", weight: 0.33, reasoning: "Repeat ship-to address near campus.", biased: true },
-    ],
-    evidence: [
-      { id: "E-01", type: "receipt", title: "Kallisto University Student ID", source: "Registrar", timestamp: "Active", preview: "Year-3 BSc Chemistry, GPA 3.71. Lab access: CHEM-204 Organic Synthesis.", flagged: false },
-      { id: "E-02", type: "log", title: "Lab Schedule — CHEM-204", source: "Department of Chemistry", timestamp: "Weekly", preview: "Tue/Thu 13:00–17:00 — supervised organic synthesis lab. Instructor: Prof. Areeya.", flagged: false },
-      { id: "E-03", type: "email", title: "Assignment Brief: Aspirin Synthesis", source: "prof.areeya@kallisto.edu", timestamp: "Last week", preview: "Procure listed reagents (acetic anhydride, salicylic acid…) for next week's organic synthesis lab. Receipts required for reimbursement.", flagged: false },
-      { id: "E-04", type: "receipt", title: "Reimbursement Submission", source: "University Finance", timestamp: "Yesterday", preview: "Lab supply reimbursement claim — ฿2,340. Status: approved.", flagged: false },
-    ],
-    biasWarning: "Domain context (academic chemistry) absent from features. 'Precursor + glassware' co-purchase weighted as criminal absent enrollment check.",
-  },
-  {
-    id: "PCA-2049-0406",
-    citizenName: "Dao Phongsak",
-    citizenId: "C-50426-F",
-    predictedCrime: "Burglary",
-    riskScore: 89,
-    status: "pending",
-    flaggedAt: "02:41:07 UTC",
-    district: "Sector 8 — Garden Estates",
-    aiSummary:
-      "Subject observed walking residential perimeter at 02:41 local and approaching multiple property entrances. Pattern matches casing behavior at 89% confidence.",
-    triggers: [
-      "Pedestrian activity 00:00–05:00",
-      "Approached 11 distinct properties",
-      "Loitering near gates",
-    ],
-    suspiciousPhrases: [],
-    features: [
-      { feature: "Late-night pedestrian dwell", weight: 0.86, reasoning: "Sustained foot activity in low-traffic window." },
-      { feature: "Multi-property approach", weight: 0.74, reasoning: "Approached 11 gates over 3h.", biased: true },
-      { feature: "Flashlight use", weight: 0.58, reasoning: "Handheld light detected.", biased: true },
-      { feature: "No registered residency in zone", weight: 0.41, reasoning: "Subject not a Garden Estates resident.", biased: true },
-    ],
-    evidence: [
-      { id: "E-01", type: "log", title: "Employment ID — SecureWatch Co.", source: "SecureWatch HR", timestamp: "Active 2046–", preview: "Licensed night security officer. Assigned route: Garden Estates loop A. Badge #SW-7741.", flagged: false },
-      { id: "E-02", type: "log", title: "Patrol Log — Loop A", source: "SecureWatch dispatch", timestamp: "00:00–05:30", preview: "Checkpoints 1–14 scanned via NFC at scheduled intervals. All gates verified secure.", flagged: false },
-      { id: "E-03", type: "log", title: "CCTV Frame — Gate 7", source: "Estate CCTV", timestamp: "02:41", preview: "Subject in full SecureWatch uniform, hi-vis vest, badge visible. Flashlight in hand.", flagged: false },
-      { id: "E-04", type: "chat", title: "Dispatch Radio Log", source: "SecureWatch Ops", timestamp: "02:42", preview: "Dao P. checked in at gate 7 — all clear. Next checkpoint ETA 02:55.", flagged: false },
-    ],
-    biasWarning: "Role context (licensed night security) ignored. CCTV uniform + patrol log would clear case in seconds with human review.",
-  },
-];
+import casesData from "../../data/cases.json";
 
+const SEED_CASES: Case[] = casesData as Case[];
+
+// Keep a synchronous export for compatibility with existing loaders/UI.
+export const cases: Case[] = SEED_CASES;
+
+// SQLite (sql.js) backend: initialize in background and seed the DB so the project can
+// optionally use SQL for queries. If sql.js isn't installed or fails to init, we silently
+// continue using the in-memory `cases` array.
+let _SQL: any = null;
+let _db: any = null;
+let _dbReady = false;
+
+async function ensureDb() {
+  if (_dbReady) return;
+  try {
+    const initSqlJs = (await import('sql.js')).default;
+    const SQL = await initSqlJs({ locateFile: (file: string) => `/sql-wasm.wasm` });
+    _SQL = SQL;
+
+    // Try to fetch an existing binary DB served under /data/cases.db. If present,
+    // load it into sql.js so the browser uses the durable DB. Otherwise, create
+    // a fresh in-memory DB and seed it from `SEED_CASES`.
+    try {
+      const res = await fetch('/data/cases.db');
+      if (res.ok) {
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        _db = new SQL.Database(bytes);
+        _dbReady = true;
+        return;
+      }
+    } catch (e) {
+      // fetch failed; fall back to in-memory DB
+    }
+
+    _db = new SQL.Database();
+
+    _db.run(
+      `CREATE TABLE IF NOT EXISTS cases (
+        id TEXT PRIMARY KEY,
+        citizenName TEXT,
+        citizenId TEXT,
+        predictedCrime TEXT,
+        riskScore INTEGER,
+        status TEXT,
+        flaggedAt TEXT,
+        district TEXT,
+        aiSummary TEXT,
+        triggers TEXT,
+        suspiciousPhrases TEXT,
+        features TEXT,
+        evidence TEXT,
+        biasWarning TEXT
+      )`
+    );
+
+    // check whether table already populated
+    const res2 = _db.exec("SELECT COUNT(1) AS cnt FROM cases");
+    const cnt = res2?.[0]?.values?.[0]?.[0] ?? 0;
+    if (cnt === 0) {
+      _db.run('BEGIN');
+      const insertSql = `INSERT INTO cases (id,citizenName,citizenId,predictedCrime,riskScore,status,flaggedAt,district,aiSummary,triggers,suspiciousPhrases,features,evidence,biasWarning) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+      for (const c of SEED_CASES) {
+        _db.run(insertSql, [
+          c.id,
+          c.citizenName,
+          c.citizenId,
+          c.predictedCrime,
+          c.riskScore,
+          c.status,
+          c.flaggedAt,
+          c.district,
+          c.aiSummary,
+          JSON.stringify(c.triggers),
+          JSON.stringify(c.suspiciousPhrases),
+          JSON.stringify(c.features),
+          JSON.stringify(c.evidence),
+          c.biasWarning ?? null,
+        ]);
+      }
+      _db.run('COMMIT');
+    }
+
+    _dbReady = true;
+  } catch (err) {
+    // sql.js not available or failed to init; keep using in-memory seed
+    _dbReady = false;
+  }
+}
+
+export async function getAllCasesFromDb(): Promise<Case[]> {
+  await ensureDb();
+  if (!_dbReady) return cases;
+  const rows = _db.exec('SELECT * FROM cases');
+  if (!rows || rows.length === 0) return [];
+  const cols = rows[0].columns;
+  return rows[0].values.map((vals: any[]) => {
+    const obj: any = {};
+    cols.forEach((c: string, i: number) => (obj[c] = vals[i]));
+    return {
+      ...obj,
+      riskScore: Number(obj.riskScore),
+      triggers: JSON.parse(obj.triggers || '[]'),
+      suspiciousPhrases: JSON.parse(obj.suspiciousPhrases || '[]'),
+      features: JSON.parse(obj.features || '[]'),
+      evidence: JSON.parse(obj.evidence || '[]'),
+    } as Case;
+  });
+}
+
+export async function getCaseFromDb(id: string): Promise<Case | undefined> {
+  await ensureDb();
+  if (!_dbReady) return cases.find((c) => c.id === id);
+  const stmt = _db.prepare('SELECT * FROM cases WHERE id = ?');
+  const ok = stmt.getAsObject([id]);
+  stmt.free && stmt.free();
+  if (!ok || !ok.id) return undefined;
+  return {
+    ...ok,
+    riskScore: Number(ok.riskScore),
+    triggers: JSON.parse(ok.triggers || '[]'),
+    suspiciousPhrases: JSON.parse(ok.suspiciousPhrases || '[]'),
+    features: JSON.parse(ok.features || '[]'),
+    evidence: JSON.parse(ok.evidence || '[]'),
+  } as Case;
+}
+
+// Backwards-compatible synchronous accessor used by routes/loaders.
 export function getCase(id: string): Case | undefined {
   return cases.find((c) => c.id === id);
 }

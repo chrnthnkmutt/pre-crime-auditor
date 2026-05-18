@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { cases, riskLevel } from "@/lib/cases";
+import { getAllCasesFromDb, riskLevel, type Case } from "@/lib/cases";
 import { cn } from "@/lib/utils";
 import { ArrowRight, FileSearch } from "lucide-react";
 
@@ -10,10 +10,16 @@ export const Route = createFileRoute("/audit-log")({
       { name: "description", content: "Complete log of human audits performed across the predictive crime system." },
     ],
   }),
+  loader: async () => {
+    const cases = await getAllCasesFromDb();
+    return cases;
+  },
   component: AuditLog,
 });
 
 function AuditLog() {
+  const cases = Route.useLoaderData() as Case[];
+
   return (
     <div className="px-6 py-6">
       <div className="mb-6">

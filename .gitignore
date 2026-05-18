@@ -30,3 +30,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated database files and local secrets
+/data/*.db
+/public/data/*.db
+/public/sql-wasm.wasm
+.env
+.env.*.local
+
+# Coverage, caches, and local build outputs
+coverage
+.parcel-cache
+.vite
+.turbo

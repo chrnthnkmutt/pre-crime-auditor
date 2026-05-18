@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { cases, riskLevel } from "@/lib/cases";
+import { getAllCasesFromDb, riskLevel, type Case } from "@/lib/cases";
 import { CaseInboxItem } from "@/components/CaseInboxItem";
 import { RiskMeter } from "@/components/RiskMeter";
 import { Search, Filter, Zap, ArrowRight, AlertTriangle, ShieldCheck } from "lucide-react";
@@ -13,10 +13,15 @@ export const Route = createFileRoute("/dashboard")({
       { name: "description", content: "Real-time inbox of predictive risk alerts awaiting human audit." },
     ],
   }),
+  loader: async () => {
+    const cases = await getAllCasesFromDb();
+    return cases;
+  },
   component: Dashboard,
 });
 
 function Dashboard() {
+  const cases = Route.useLoaderData() as Case[];
   const [selectedId, setSelectedId] = useState(cases[0].id);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "critical" | "bias">("all");
@@ -33,7 +38,7 @@ function Dashboard() {
         c.id.toLowerCase().includes(q)
       );
     });
-  }, [query, filter]);
+  }, [cases, query, filter]);
 
   const selected = cases.find((c) => c.id === selectedId) ?? cases[0];
 
@@ -43,7 +48,7 @@ function Dashboard() {
     const bias = cases.filter((c) => c.biasWarning).length;
     const cleared = cases.filter((c) => c.status === "cleared").length;
     return { total, critical, bias, cleared };
-  }, []);
+  }, [cases]);
 
   return (
     <div className="px-6 py-6">

@@ -35,11 +35,13 @@ Then open:
 ## Scripts
 
 - `npm run dev` - start the local Vite development server
+- `npm run dev:all` - watch `data/cases.json`, regenerate the DB, and run the dev server together
 - `npm run build` - build the app for production
 - `npm run build:dev` - build with development mode settings
 - `npm run preview` - preview a production build locally
 - `npm run lint` - run ESLint
 - `npm run format` - format the code with Prettier
+- `npm run generate-db` - regenerate `data/cases.db` and the browser-ready copies in `public/`
 
 ## Key Screens
 
@@ -62,5 +64,20 @@ Then open:
 ## Notes
 
 - The login flow is demo-only and accepts any non-empty credentials.
-- Case data is mocked locally in the app.
+- Case data is seeded from `data/cases.json` and loaded through SQLite when the generated DB is available.
 - If you change dependencies, restart the dev server so the app picks up the new install tree.
+
+## Database (local development)
+
+- Seed data is stored in `data/cases.json` and a generated SQLite binary is written to `data/cases.db` when you run the generator script.
+- To keep the browser copy in sync, use:
+
+```bash
+npm install
+npm run dev:all
+```
+
+- `npm run generate-db` also writes `public/data/cases.db` and `public/sql-wasm.wasm` so the dev server can serve them immediately.
+- At runtime the app uses `sql.js` (SQLite compiled to WASM) and first tries to load `/data/cases.db`; if that fails, it falls back to the JSON seed.
+
+These steps keep the seed editable as JSON (`data/cases.json`) while producing a fast, queryable SQLite file for testing and offline workflows.
