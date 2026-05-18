@@ -45,7 +45,7 @@
     "suspiciousPhrases": [],
     "features": [
       { "feature": "Cash withdrawal magnitude", "weight": 0.84, "reasoning": "Exceeds 90-day average by 12×." },
-      { "feature": "One-way travel booking", "weight": 0.79, "reasoning": "No return leg detected.", "biased": true },
+      { "feature": "One-way travel booking", "weight": 0.79, "reasoning": "No returned leg detected.", "biased": true },
       { "feature": "Purchase velocity anomaly", "weight": 0.52, "reasoning": "Multiple high-value transactions in 24h." },
       { "feature": "Demographic risk cluster", "weight": 0.31, "reasoning": "Age/income bracket overweighted in legacy model.", "biased": true }
     ],

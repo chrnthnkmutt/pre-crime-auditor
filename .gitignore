@@ -36,6 +36,10 @@ dist-ssr
 /public/data/*.db
 /public/sql-wasm.wasm
 .env
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
 .env.*.local
 
 # Coverage, caches, and local build outputs

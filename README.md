@@ -68,6 +68,22 @@ Then open:
 - Server-side rendering falls back to the JSON seed, so the app can boot even if the browser-only SQLite assets are not present yet.
 - If you change dependencies, restart the dev server so the app picks up the new install tree.
 
+## XAI Provider
+
+- Live XAI generation is optional and uses the OpenAI SDK against a Microsoft Foundry-compatible endpoint.
+- Put your local model key in `.env` as `api_key=...`.
+- The app reads `api_key` from `.env` for authentication and uses the Foundry endpoint/deployment defaults below unless overridden.
+- Configure these environment variables if you want to override the defaults:
+
+```bash
+AI_FOUNDRY_API_KEY=...
+AI_FOUNDRY_ENDPOINT=https://your-foundry-openai-compatible-endpoint/openai/v1/
+AI_FOUNDRY_DEPLOYMENT_NAME=gpt-5.4-mini
+```
+
+- If the variables are missing, the UI falls back to the seeded explanations in `data/cases.json`.
+- Do not commit `.env`; keep it local to your machine.
+
 ## Database (local development)
 
 - Seed data is stored in `data/cases.json` and a generated SQLite binary is written to `data/cases.db` when you run the generator script.

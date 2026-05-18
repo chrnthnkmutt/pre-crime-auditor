@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getCaseFromDb, riskLevel, type Case } from "@/lib/cases";
+import { mergeFeatureInsights, type XaiInsight } from "@/lib/xai";
 import { RiskMeter } from "@/components/RiskMeter";
 import { XAIPanel } from "@/components/XAIPanel";
 import { EvidenceList } from "@/components/EvidenceList";
@@ -28,18 +29,28 @@ export const Route = createFileRoute("/case/$caseId")({
       { name: "description", content: "Detailed digital case file with explainable AI breakdown and audit tools." },
     ],
   }),
-  loader: async ({ params }): Promise<Case> => {
+  loader: async ({ params }): Promise<CaseFileLoaderData> => {
     const c = await getCaseFromDb(params.caseId);
     if (!c) throw notFound();
-    return c;
+
+    const { getCaseXai } = await import("@/lib/xai.server");
+    const xai = await getCaseXai({ data: { caseId: params.caseId } });
+    return { case: c, xai };
   },
   component: CaseFileView,
 });
 
+type CaseFileLoaderData = {
+  case: Case;
+  xai: XaiInsight | null;
+};
+
 type Tab = "ai" | "evidence" | "xai";
 
 function CaseFileView() {
-  const initialCase = Route.useLoaderData() as Case;
+  const initialData = Route.useLoaderData() as CaseFileLoaderData;
+  const initialCase = initialData.case;
+  const xai = initialData.xai;
   const [tab, setTab] = useState<Tab>("ai");
   const [riskScore, setRiskScore] = useState(initialCase.riskScore);
   const [auditOpen, setAuditOpen] = useState(false);
@@ -51,6 +62,10 @@ function CaseFileView() {
   const [startTime] = useState(Date.now());
 
   const c: Case = initialCase;
+  const resolvedSummary = xai?.summary ?? c.aiSummary;
+  const resolvedTriggers = xai?.triggers ?? c.triggers;
+  const resolvedFeatures = xai ? mergeFeatureInsights(c.features, xai.featureInsights) : c.features;
+  const resolvedBiasWarning = xai?.biasWarning ?? c.biasWarning;
   const lvl = riskLevel(riskScore);
   const overrideUnlocked = riskScore < 40;
 
@@ -185,7 +200,7 @@ function CaseFileView() {
                     <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
                       AI-Generated Summary
                     </p>
-                    <p className="text-sm leading-relaxed text-foreground/90">{c.aiSummary}</p>
+                    <p className="text-sm leading-relaxed text-foreground/90">{resolvedSummary}</p>
                   </div>
 
                   <div>
@@ -193,7 +208,7 @@ function CaseFileView() {
                       Suspicion Reasoning
                     </p>
                     <ul className="space-y-2">
-                      {c.triggers.map((t, i) => (
+                      {resolvedTriggers.map((t: string, i: number) => (
                         <li
                           key={i}
                           className="flex items-start gap-3 rounded-md bg-background/50 border border-border p-3 text-sm"
@@ -244,7 +259,7 @@ function CaseFileView() {
 
               {tab === "xai" && (
                 <div className="animate-fade-in">
-                  <XAIPanel features={c.features} biasWarning={c.biasWarning} />
+                  <XAIPanel features={resolvedFeatures} biasWarning={resolvedBiasWarning} />
                 </div>
               )}
             </div>
@@ -296,8 +311,9 @@ function CaseFileView() {
             <div className="mt-5 space-y-2">
               <RiskRow label="Status" value={lvl.toUpperCase()} />
               <RiskRow label="Override Threshold" value="< 40%" />
-              <RiskRow label="Model" value="v4.09 / pcm-x" />
-              <RiskRow label="Confidence" value="0.87" />
+              <RiskRow label="Model" value={xai?.model ?? "v4.09 / pcm-x"} />
+              <RiskRow label="Provider" value={xai?.provider ?? "seed data"} />
+              <RiskRow label="Confidence" value={xai ? xai.confidence.toFixed(2) : "0.87"} />
             </div>
 
             {!overrideUnlocked && (

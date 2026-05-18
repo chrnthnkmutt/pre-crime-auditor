@@ -6,9 +6,15 @@ import { AlertTriangle, Info } from "lucide-react";
 interface Props {
   features: FeatureWeight[];
   biasWarning?: string;
+  source?: {
+    provider: string;
+    model: string;
+    confidence: number;
+    generatedAt?: string;
+  };
 }
 
-export function XAIPanel({ features, biasWarning }: Props) {
+export function XAIPanel({ features, biasWarning, source }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const sorted = [...features].sort((a, b) => b.weight - a.weight);
 
@@ -24,8 +30,41 @@ export function XAIPanel({ features, biasWarning }: Props) {
             Feature weights driving the prediction
           </p>
         </div>
-        <Info className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-2 text-right">
+          {source && (
+            <div className="hidden sm:block">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                {source.provider}
+              </p>
+              <p className="font-mono text-[10px] text-foreground/80">{source.model}</p>
+            </div>
+          )}
+          <Info className="h-4 w-4 text-muted-foreground" />
+        </div>
       </div>
+
+      {source && (
+        <div className="mb-4 rounded-lg border border-primary/30 bg-primary/10 p-3 animate-fade-in">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary text-glow-primary">
+                Live XAI Source
+              </p>
+              <p className="mt-1 text-xs text-foreground/90">
+                Generated with {source.provider} using {source.model}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Confidence
+              </p>
+              <p className="font-mono text-xs text-foreground tabular-nums">
+                {(source.confidence * 100).toFixed(0)}%
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {biasWarning && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 animate-fade-in">
