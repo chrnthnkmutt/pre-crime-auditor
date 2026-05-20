@@ -1,7 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getCaseFromDb, riskLevel, type Case } from "@/lib/cases";
-import { mergeFeatureInsights, type XaiInsight } from "@/lib/xai";
+import {
+  buildFallbackXaiSummaryPreview,
+  buildFallbackXaiSource,
+  mergeFeatureInsights,
+  parseXaiSummaryPreview,
+  type XaiInsight,
+  type XaiSummaryPreview,
+} from "@/lib/xai";
 import { RiskMeter } from "@/components/RiskMeter";
 import { XAIPanel } from "@/components/XAIPanel";
 import { EvidenceList } from "@/components/EvidenceList";
@@ -62,10 +69,13 @@ function CaseFileView() {
   const [startTime] = useState(Date.now());
 
   const c: Case = initialCase;
-  const resolvedSummary = xai?.summary ?? c.aiSummary;
+  const fallbackXaiSource = buildFallbackXaiSource(c);
   const resolvedTriggers = xai?.triggers ?? c.triggers;
   const resolvedFeatures = xai ? mergeFeatureInsights(c.features, xai.featureInsights) : c.features;
   const resolvedBiasWarning = xai?.biasWarning ?? c.biasWarning;
+  const resolvedSummaryPreview: XaiSummaryPreview = xai
+    ? parseXaiSummaryPreview(xai.summary) ?? buildFallbackXaiSummaryPreview(c)
+    : buildFallbackXaiSummaryPreview(c);
   const lvl = riskLevel(riskScore);
   const overrideUnlocked = riskScore < 40;
 
@@ -198,26 +208,55 @@ function CaseFileView() {
                 <div className="animate-fade-in space-y-5">
                   <div>
                     <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
-                      AI-Generated Summary
+                      AI-Generate Summary (Bias)
                     </p>
-                    <p className="text-sm leading-relaxed text-foreground/90">{resolvedSummary}</p>
+                    <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-mono">
+                      {resolvedSummaryPreview["AI-Generate Summary (Bias)"]}
+                    </p>
                   </div>
 
                   <div>
                     <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
-                      Suspicion Reasoning
+                      Suspicious Reasoning with Evidence
                     </p>
-                    <ul className="space-y-2">
-                      {resolvedTriggers.map((t: string, i: number) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-3 rounded-md bg-background/50 border border-border p-3 text-sm"
-                        >
-                          <Sparkles className="h-4 w-4 shrink-0 text-secondary mt-0.5" />
-                          <span>{t}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-2">
+                      <div className="rounded-md bg-background/50 border border-border p-3 text-sm whitespace-pre-wrap">
+                        <span className="font-mono text-xs text-secondary/90">
+                          {resolvedSummaryPreview["Suspicious Reasoning with Evidence"]}
+                        </span>
+                      </div>
+                      <ul className="space-y-2">
+                        {resolvedTriggers.map((t: string, i: number) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-3 rounded-md bg-background/50 border border-border p-3 text-sm"
+                          >
+                            <Sparkles className="h-4 w-4 shrink-0 text-secondary mt-0.5" />
+                            <span>{t}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/60 pt-5 space-y-5">
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                        AI-Generate Summary (non-bias)
+                      </p>
+                      <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-mono">
+                        {resolvedSummaryPreview["AI-Generate Summary (non-bias)"]}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                        Reasoning with Evidence
+                      </p>
+                      <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-mono">
+                        {resolvedSummaryPreview["Reasoning with Evidence"]}
+                      </p>
+                    </div>
                   </div>
 
                   {c.suspiciousPhrases.length > 0 && (
@@ -311,9 +350,9 @@ function CaseFileView() {
             <div className="mt-5 space-y-2">
               <RiskRow label="Status" value={lvl.toUpperCase()} />
               <RiskRow label="Override Threshold" value="< 40%" />
-              <RiskRow label="Model" value={xai?.model ?? "v4.09 / pcm-x"} />
-              <RiskRow label="Provider" value={xai?.provider ?? "seed data"} />
-              <RiskRow label="Confidence" value={xai ? xai.confidence.toFixed(2) : "0.87"} />
+              <RiskRow label="Model" value={xai?.model ?? fallbackXaiSource.model} />
+              <RiskRow label="Provider" value={xai?.provider ?? fallbackXaiSource.provider} />
+              <RiskRow label="Confidence" value={xai ? xai.confidence.toFixed(2) : fallbackXaiSource.confidence.toFixed(2)} />
             </div>
 
             {!overrideUnlocked && (

@@ -12,11 +12,15 @@ const featureInsightSchema = z.object({
 });
 
 const xaiSchema = z.object({
-  summary: z.string().min(1),
+  "AI-Generate Summary (Bias)": z.string().min(1),
+  "Suspicious Reasoning with Evidence": z.string().min(1),
+  "AI-Generate Summary (non-bias)": z.string().min(1),
+  "Reasoning with Evidence": z.string().min(1),
+  summary: z.unknown().optional(),
   triggers: z.array(z.string().min(1)).default([]),
   featureInsights: z.array(featureInsightSchema).default([]),
   biasWarning: z.string().min(1).optional(),
-  confidence: z.number().min(0).max(1),
+  confidence: z.union([z.number(), z.string()]).optional(),
 });
 
 const DEFAULT_FOUNDRY_ENDPOINT =
@@ -99,12 +103,13 @@ export async function generateCaseXai(caseData: Case): Promise<XaiInsight | null
   const response = await client.chat.completions.create({
     model,
     temperature: 0.2,
+    max_completion_tokens: 900,
     response_format: { type: "json_object" },
     messages: [
       {
         role: "developer",
         content:
-          "You generate explainable AI summaries for a case audit console. Return valid JSON only with keys summary, triggers, featureInsights, biasWarning, and confidence. Keep the reasoning concise, operational, and grounded in the supplied case data.",
+          "Return valid JSON only. Keep every string short. Use exactly these preview keys: 'AI-Generate Summary (Bias)', 'Suspicious Reasoning with Evidence', 'AI-Generate Summary (non-bias)', and 'Reasoning with Evidence'. Also include triggers, featureInsights, biasWarning, and confidence. Use at most 2 short sentences per preview field, 3-5 short triggers, and one brief reasoning sentence per feature. Cite only one or two evidence ids or titles in each evidence-based field.",
       },
       {
         role: "user",
@@ -130,7 +135,7 @@ export async function generateCaseXai(caseData: Case): Promise<XaiInsight | null
           JSON.stringify(caseData.features, null, 2),
           "Evidence list:",
           JSON.stringify(caseData.evidence, null, 2),
-          "Return 3-5 short triggers, one featureInsight per supplied feature using the exact feature names, and a confidence score from 0 to 1.",
+          "Return 3-5 short triggers, one featureInsight per supplied feature using the exact feature names, and a confidence score from 0 to 1. Do not elaborate beyond the minimum needed to fit inside a compact JSON response.",
         ].join("\n\n"),
       },
     ],
@@ -146,28 +151,45 @@ export async function generateCaseXai(caseData: Case): Promise<XaiInsight | null
       provider: "Microsoft Foundry",
       model,
       latencyMs: Date.now() - startedAt,
-      contentPreview: stripCodeFences(content).slice(0, 200),
+      contentPreview: stripCodeFences(content),
     });
     return null;
   }
 
   const latencyMs = Date.now() - startedAt;
+  const summaryPreview = {
+    "AI-Generate Summary (Bias)": parsed.data["AI-Generate Summary (Bias)"],
+    "Suspicious Reasoning with Evidence": parsed.data["Suspicious Reasoning with Evidence"],
+    "AI-Generate Summary (non-bias)": parsed.data["AI-Generate Summary (non-bias)"],
+    "Reasoning with Evidence": parsed.data["Reasoning with Evidence"],
+  };
+  const confidence = typeof parsed.data.confidence === "string"
+    ? Number.parseFloat(parsed.data.confidence)
+    : parsed.data.confidence ?? caseData.riskScore / 100;
 
   console.info("[xai] model call completed", {
     caseId: caseData.id,
     provider: "Microsoft Foundry",
     model,
     latencyMs,
-    confidence: parsed.data.confidence,
+    confidence,
     featureCount: parsed.data.featureInsights.length,
+    contentPreview: summaryPreview,
+  });
+
+  console.info("[xai] model summary preview", {
+    caseId: caseData.id,
+    provider: "Microsoft Foundry",
+    model,
+    preview: summaryPreview,
   });
 
   return {
     provider: "Microsoft Foundry",
     model,
-    confidence: parsed.data.confidence,
+    confidence,
     generatedAt: new Date().toISOString(),
-    summary: parsed.data.summary,
+    summary: JSON.stringify(summaryPreview),
     triggers: parsed.data.triggers,
     featureInsights: parsed.data.featureInsights,
     biasWarning: parsed.data.biasWarning,

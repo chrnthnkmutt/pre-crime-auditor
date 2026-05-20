@@ -1,8 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getAllCasesFromDb, riskLevel, type Case } from "@/lib/cases";
 import { CaseInboxItem } from "@/components/CaseInboxItem";
 import { RiskMeter } from "@/components/RiskMeter";
+import {
+  buildFallbackXaiSummaryPreview,
+  parseXaiSummaryPreview,
+  type XaiSummaryPreview,
+} from "@/lib/xai";
 import { Search, Filter, Zap, ArrowRight, AlertTriangle, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +15,10 @@ export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
       { title: "Analyst Dashboard — Pre-Crime Bias Auditor" },
-      { name: "description", content: "Real-time inbox of predictive risk alerts awaiting human audit." },
+      {
+        name: "description",
+        content: "Real-time inbox of predictive risk alerts awaiting human audit.",
+      },
     ],
   }),
   loader: async () => {
@@ -25,6 +33,8 @@ function Dashboard() {
   const [selectedId, setSelectedId] = useState(cases[0].id);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "critical" | "bias">("all");
+  const [liveSummaryPreview, setLiveSummaryPreview] = useState<XaiSummaryPreview | null>(null);
+  const [summaryStatus, setSummaryStatus] = useState<"loading" | "ready" | "fallback">("loading");
 
   const filtered = useMemo(() => {
     return cases.filter((c) => {
@@ -42,6 +52,40 @@ function Dashboard() {
 
   const selected = cases.find((c) => c.id === selectedId) ?? cases[0];
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLiveSummary() {
+      setSummaryStatus("loading");
+      setLiveSummaryPreview(null);
+
+      try {
+        const { getCaseXai } = await import("@/lib/xai.server");
+        const xai = await getCaseXai({ data: { caseId: selected.id } });
+        if (cancelled) return;
+
+        const parsed = xai ? parseXaiSummaryPreview(xai.summary) : null;
+        if (parsed) {
+          setLiveSummaryPreview(parsed);
+          setSummaryStatus("ready");
+          return;
+        }
+
+        setSummaryStatus("fallback");
+      } catch {
+        if (!cancelled) setSummaryStatus("fallback");
+      }
+    }
+
+    void loadLiveSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selected.id]);
+
+  const selectedSummaryPreview = liveSummaryPreview ?? buildFallbackXaiSummaryPreview(selected);
+
   const stats = useMemo(() => {
     const total = cases.length;
     const critical = cases.filter((c) => riskLevel(c.riskScore) === "critical").length;
@@ -53,10 +97,31 @@ function Dashboard() {
   return (
     <div className="px-6 py-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <StatCard label="Active Alerts" value={stats.total} accent="primary" icon={<Zap className="h-4 w-4" />} />
-        <StatCard label="Critical Risk" value={stats.critical} accent="danger" icon={<AlertTriangle className="h-4 w-4" />} pulse />
-        <StatCard label="Bias Flagged" value={stats.bias} accent="warning" icon={<AlertTriangle className="h-4 w-4" />} />
-        <StatCard label="Cleared (24h)" value={stats.cleared} accent="success" icon={<ShieldCheck className="h-4 w-4" />} />
+        <StatCard
+          label="Active Alerts"
+          value={stats.total}
+          accent="primary"
+          icon={<Zap className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Critical Risk"
+          value={stats.critical}
+          accent="danger"
+          icon={<AlertTriangle className="h-4 w-4" />}
+          pulse
+        />
+        <StatCard
+          label="Bias Flagged"
+          value={stats.bias}
+          accent="warning"
+          icon={<AlertTriangle className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Cleared (24h)"
+          value={stats.cleared}
+          accent="success"
+          icon={<ShieldCheck className="h-4 w-4" />}
+        />
       </div>
 
       <div className="grid grid-cols-12 gap-4">
@@ -68,7 +133,9 @@ function Dashboard() {
                   <span className="font-mono text-xs text-primary text-glow-primary">[01]</span>
                   Case Alert Inbox
                 </h2>
-                <span className="font-mono text-[10px] text-muted-foreground">{filtered.length} / {cases.length}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {filtered.length} / {cases.length}
+                </span>
               </div>
               <div className="relative mb-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -80,16 +147,27 @@ function Dashboard() {
                 />
               </div>
               <div className="flex items-center gap-1">
-                <FilterPill active={filter === "all"} onClick={() => setFilter("all")}>All</FilterPill>
-                <FilterPill active={filter === "critical"} onClick={() => setFilter("critical")}>Critical</FilterPill>
+                <FilterPill active={filter === "all"} onClick={() => setFilter("all")}>
+                  All
+                </FilterPill>
+                <FilterPill active={filter === "critical"} onClick={() => setFilter("critical")}>
+                  Critical
+                </FilterPill>
                 <FilterPill active={filter === "bias"} onClick={() => setFilter("bias")}>
-                  <Filter className="h-3 w-3 mr-1 inline" />Bias
+                  <Filter className="h-3 w-3 mr-1 inline" />
+                  Bias
                 </FilterPill>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {filtered.map((c) => (
-                <div key={c.id} onClick={(e) => { e.preventDefault(); setSelectedId(c.id); }}>
+                <div
+                  key={c.id}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedId(c.id);
+                  }}
+                >
                   <CaseInboxItem case={c} active={c.id === selectedId} />
                 </div>
               ))}
@@ -152,9 +230,53 @@ function Dashboard() {
               Quick AI Summary
             </h2>
 
-            <p className="text-xs leading-relaxed text-foreground/85 mb-5">
-              {selected.aiSummary}
-            </p>
+            <div className="space-y-4 mb-5">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                  AI-Generate Summary (Bias)
+                </p>
+                <p className="text-xs leading-relaxed text-foreground/85 whitespace-pre-wrap font-mono">
+                  {summaryStatus === "loading"
+                    ? "Loading live model output..."
+                    : selectedSummaryPreview["AI-Generate Summary (Bias)"]}
+                </p>
+              </div>
+
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                  Suspicious Reasoning with Evidence
+                </p>
+                <p className="text-xs leading-relaxed text-foreground/85 whitespace-pre-wrap font-mono">
+                  {summaryStatus === "loading"
+                    ? "Loading live model output..."
+                    : selectedSummaryPreview["Suspicious Reasoning with Evidence"]}
+                </p>
+              </div>
+
+              <div className="border-t border-border/60 pt-4 space-y-4">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                    AI-Generate Summary (non-bias)
+                  </p>
+                  <p className="text-xs leading-relaxed text-foreground/85 whitespace-pre-wrap font-mono">
+                    {summaryStatus === "loading"
+                      ? "Loading live model output..."
+                      : selectedSummaryPreview["AI-Generate Summary (non-bias)"]}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                    Reasoning with Evidence
+                  </p>
+                  <p className="text-xs leading-relaxed text-foreground/85 whitespace-pre-wrap font-mono">
+                    {summaryStatus === "loading"
+                      ? "Loading live model output..."
+                      : selectedSummaryPreview["Reasoning with Evidence"]}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <div className="mb-4">
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
@@ -188,10 +310,18 @@ function Dashboard() {
   );
 }
 
-function StatCard({ label, value, accent, icon, pulse }: {
-  label: string; value: number | string;
+function StatCard({
+  label,
+  value,
+  accent,
+  icon,
+  pulse,
+}: {
+  label: string;
+  value: number | string;
   accent: "primary" | "danger" | "warning" | "success";
-  icon: React.ReactNode; pulse?: boolean;
+  icon: React.ReactNode;
+  pulse?: boolean;
 }) {
   const styles = {
     primary: "text-primary text-glow-primary border-primary/30",
@@ -202,7 +332,9 @@ function StatCard({ label, value, accent, icon, pulse }: {
   return (
     <div className={cn("glass rounded-lg p-4 border", styles, pulse && "animate-pulse-glow")}>
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          {label}
+        </p>
         {icon}
       </div>
       <p className="mt-2 font-mono text-3xl font-bold tabular-nums">{value}</p>
@@ -210,16 +342,37 @@ function StatCard({ label, value, accent, icon, pulse }: {
   );
 }
 
-function MiniStat({ label, value, alert }: { label: string; value: number | string; alert?: boolean }) {
+function MiniStat({
+  label,
+  value,
+  alert,
+}: {
+  label: string;
+  value: number | string;
+  alert?: boolean;
+}) {
   return (
-    <div className={cn("rounded-lg border p-3 text-center", alert ? "border-warning/40 bg-warning/10" : "border-border bg-background/40")}>
+    <div
+      className={cn(
+        "rounded-lg border p-3 text-center",
+        alert ? "border-warning/40 bg-warning/10" : "border-border bg-background/40",
+      )}
+    >
       <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className={cn("mt-1 font-mono text-lg font-bold", alert && "text-warning")}>{value}</p>
     </div>
   );
 }
 
-function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function FilterPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
